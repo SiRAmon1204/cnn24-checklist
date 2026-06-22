@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCN24 Checklist</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Sarabun,sans-serif;background:#f7f7f5;color:#1a1a1a;font-size:14px;min-height:100vh}
+
+/* Top bar */
+.topbar{background:#fff;border-bottom:1px solid #e8e8e4;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.topbar h1{font-size:16px;font-weight:700}
+.topbar p{font-size:11px;color:#999;margin-top:2px}
+.progress-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.progress-bar{width:140px;height:8px;background:#eee;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:#1a1a1a;border-radius:99px;transition:width .3s}
+.progress-label{font-size:12px;font-weight:700;color:#1a1a1a;min-width:44px;text-align:right}
+
+/* Tabs */
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid #e8e8e4;padding:0 20px}
+.tab{padding:12px 18px;font-size:13px;font-weight:600;color:#999;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:Sarabun,sans-serif;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:#333}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+
+/* Controls */
+.controls{padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid #f0f0eb}
+.filter-btn{font-size:12px;padding:5px 12px;border:1.5px solid #ddd;border-radius:20px;background:#fff;color:#555;cursor:pointer;font-family:Sarabun,sans-serif;transition:all .15s}
+.filter-btn:hover{border-color:#999;color:#111}
+.filter-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.spacer{flex:1}
+.reset-btn{font-size:11px;color:#bbb;cursor:pointer;background:none;border:none;font-family:Sarabun,sans-serif}
+.reset-btn:hover{color:#e44}
+
+/* Content */
+.content{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+
+/* Subject section */
+.subject-block{background:#fff;border-radius:12px;border:1px solid #e8e8e4;overflow:hidden}
+.subject-header{padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.subject-header:hover{background:#fafafa}
+.subj-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0}
+.subj-title{font-size:14px;font-weight:700;flex:1}
+.subj-count{font-size:11px;color:#bbb;flex-shrink:0}
+.subj-chevron{font-size:14px;color:#ccc;transition:transform .2s;flex-shrink:0}
+.subject-block.open .subj-chevron{transform:rotate(180deg)}
+.topics-list{display:none;border-top:1px solid #f0f0eb}
+.subject-block.open .topics-list{display:block}
+
+/* Topic item */
+.topic-item{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid #f7f7f5;cursor:pointer;transition:background .1s}
+.topic-item:last-child{border-bottom:none}
+.topic-item:hover{background:#fafafa}
+.topic-item.checked{background:#f8fdf9}
+.checkbox{width:20px;height:20px;border:2px solid #ddd;border-radius:6px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.topic-item.checked .checkbox{background:#1a1a1a;border-color:#1a1a1a}
+.checkmark{color:#fff;font-size:12px;display:none}
+.topic-item.checked .checkmark{display:block}
+.topic-text{font-size:13px;line-height:1.5;color:#333}
+.topic-item.checked .topic-text{color:#aaa;text-decoration:line-through}
+
+/* Exam section */
+.exam-block{background:#fff;border-radius:12px;border:1px solid #e8e8e4;overflow:hidden}
+.exam-header-row{padding:14px 16px;font-size:14px;font-weight:700;border-bottom:1px solid #f0f0eb;display:flex;align-items:center;gap:8px}
+.exam-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f7f7f5;cursor:pointer;transition:background .1s}
+.exam-item:last-child{border-bottom:none}
+.exam-item:hover{background:#fafafa}
+.exam-item.checked{background:#fffdf5}
+.exam-info{flex:1}
+.exam-name{font-size:13px;font-weight:700;color:#1a1a1a}
+.exam-item.checked .exam-name{color:#bbb;text-decoration:line-through}
+.exam-date{font-size:12px;color:#888;margin-top:2px}
+.exam-item.checked .exam-date{color:#ccc}
+.exam-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0}
+.exam-check{width:22px;height:22px;border:2px solid #ddd;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.exam-item.checked .exam-check{background:#B45309;border-color:#B45309}
+.exam-item.checked .exam-check::after{content:'✓';color:#fff;font-size:13px}
+.exam-tag{font-size:10px;background:#FFF3CD;color:#B45309;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:6px}
+
+/* subject color themes */
+.b101{background:#f4f3ff;color:#534AB7}
+.b102{background:#EAF3FD;color:#185FA5}
+.b103{background:#E5F7F1;color:#0F6E56}
+.b104{background:#FEF5E8;color:#854F0B}
+.b105{background:#FEF0EA;color:#993C1D}
+.b108{background:#FEF0F5;color:#993556}
+
+/* empty state */
+.empty{text-align:center;padding:40px 20px;color:#ccc;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>CCN24 Checklist</h1>
+    <p>การพยาบาลผู้ป่วยวิกฤต รุ่นที่ 24 · คณะพยาบาลศาสตร์ มช.</p>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0%</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('topics',this)">หัวข้อที่เรียน</button>
+  <button class="tab" onclick="switchTab('exams',this)">ตารางสอบ</button>
+</div>
+
+<div id="tabTopics">
+  <div class="controls">
+    <button class="filter-btn active" onclick="filterSubj('all',this)">ทั้งหมด</button>
+    <button class="filter-btn" onclick="filterSubj('101',this)">CCN101</button>
+    <button class="filter-btn" onclick="filterSubj('102',this)">CCN102</button>
+    <button class="filter-btn" onclick="filterSubj('103',this)">CCN103</button>
+    <button class="filter-btn" onclick="filterSubj('104',this)">CCN104</button>
+    <button class="filter-btn" onclick="filterSubj('105',this)">CCN105</button>
+    <button class="filter-btn" onclick="filterSubj('108',this)">CCN108</button>
+    <div class="spacer"></div>
+    <button class="filter-btn" onclick="filterDone('undone',this)" id="btnUndone">ยังไม่เรียน</button>
+    <button class="reset-btn" onclick="resetTopics()">รีเซ็ต</button>
+  </div>
+  <div class="content" id="topicsContent"></div>
+</div>
+
+<div id="tabExams" style="display:none">
+  <div class="controls">
+    <button class="reset-btn" onclick="resetExams()">รีเซ็ตทั้งหมด</button>
+  </div>
+  <div class="content" id="examsContent"></div>
+</div>
+
+<script>
+const SUBJECTS=[
+  {id:'101',name:'นโยบายสุขภาพและระบบการพยาบาลผู้ป่วยวิกฤต',unit:'2(2-0-4)',topics:[
+    'ระบบสุขภาพและนโยบายสุขภาพ',
+    'จริยธรรมในการดูแลผู้ป่วยวิกฤต',
+    'สถานการณ์ของผู้ป่วยวิกฤต',
+    'มาตรฐานโครงสร้างการบริการและคุณลักษณะของทีมสุขภาพในหอผู้ป่วยวิกฤต',
+    'ระบบการดูแลต่อเนื่อง',
+    'แนวทางการสัมมนา',
+    'ค่าใช้จ่ายบริการและต้นทุนการรักษาผู้ป่วยวิกฤต',
+    'กฎหมายเกี่ยวกับการพยาบาลผู้ป่วยวิกฤต',
+    'ระบบรับรองคุณภาพในหน่วยบริการผู้ป่วยวิกฤตและตัวชี้วัดทางคลินิก',
+    'หลักการและแนวคิดการบริหารต้นทุนพยาบาลในผู้ป่วยวิกฤต',
+    'Seminar: Post ICU Syndromes',
+    'Seminar: การจัดการสิ่งแวดล้อมในหน่วยวิกฤตและ healthy workplace',
+    'Seminar: การจัดระบบบริการสำหรับผู้ป่วยวิกฤตเรื้อรัง',
+    'Seminar: ICU discharge planning',
+    'Seminar: Palliative care in ICU',
+  ]},
+  {id:'102',name:'การประเมินภาวะสุขภาพขั้นสูงในผู้ป่วยวิกฤตและการตัดสินทางคลินิก',unit:'2(1-2-3)',topics:[
+    'การประเมินสภาพระบบหัวใจและหลอดเลือด',
+    'การตรวจพิเศษระบบหัวใจและหลอดเลือด',
+    'การประเมินระบบหายใจ',
+    'การตรวจพิเศษระบบหายใจ',
+    'การประเมินระบบประสาท',
+    'การตรวจทางห้องปฏิบัติการ / ตรวจพิเศษระบบประสาท',
+    'ICP & IAP monitoring',
+    'การตัดสินทางคลินิก (Clinical judgment)',
+    'Respiratory monitoring & Respiratory waveform',
+    'Arterial blood gas',
+    'การประเมินสภาพด้านร่างกายของผู้ป่วยวิกฤต',
+    'การตอบสนองด้านจิตสังคมต่อการเจ็บป่วยวิกฤต',
+    'การประเมินการทำงานของทางเดินอาหาร ตับ และทางเดินน้ำดี',
+    'การประเมินระบบไตและทางเดินปัสสาวะ',
+    'ฝึกปฏิบัติ: EKG monitoring และฝึกแปลผลคลื่นไฟฟ้าหัวใจ',
+    'ฝึกปฏิบัติ: ฝึกตรวจการใช้อุปกรณ์ทางการแพทย์ (Bedside monitor, MV)',
+    'ฝึกปฏิบัติ: ฝึกตรวจร่างกายทุกระบบ (4 ฐาน)',
+    'สอบตรวจร่างกายทุกระบบ',
+  ]},
+  {id:'103',name:'แนวคิดและหลักการพยาบาลผู้ป่วยวิกฤต',unit:'3(3-0-6)',topics:[
+    'คุณลักษณะ บทบาทและสมรรถนะของพยาบาลวิกฤต',
+    'การพยาบาลผู้ป่วยที่ใช้เทคโนโลยีขั้นสูงเพื่อการเฝ้าระวัง (Monitoring)',
+    'Concept of critical care nursing',
+    'Critical illness trajectories',
+    'EB-tools in ICU — CPGs, ICU bundle',
+    'Pain management in ICU',
+    'Mechanical ventilation',
+    'Sepsis / Septic shock',
+    'Tissue oxygenation and assessment',
+    'Special populations in ICU',
+    'Drug used in ICU',
+    'ICU acquired weakness',
+    'การพัฒนาคุณภาพและการจัดการผลลัพธ์การพยาบาลในหน่วยบริการผู้ป่วยวิกฤต',
+    'CRRT & ECMO',
+    'DVT in ICU',
+    'Stress induced hyperglycemia',
+    'การพยาบาลผู้ป่วยที่ใช้เทคโนโลยีเพื่อกู้และ/หรือทดแทนระบบล้มเหลว',
+    'Infection control in ICU',
+    'ปัจจัยที่ส่งผลถึงคุณภาพการพยาบาลผู้ป่วยวิกฤต',
+    'Sleep deprivation in ICU',
+    'Cardiogenic shock, Hypovolemic shock & Anaphylactic shock',
+    'Nutrition support in ICU patient',
+    'Advanced cardiac life support (ACLS)',
+    'ICU delirium',
+  ]},
+  {id:'104',name:'การพยาบาลผู้ป่วยวิกฤตศัลยกรรมและบาดเจ็บ',unit:'2(2-0-4)',topics:[
+    'แนวคิดการพยาบาลผู้ป่วยวิกฤตศัลยกรรม',
+    'IICP, brain herniation & brain edema',
+    'บาดเจ็บหลายระบบ',
+    'การจัดการทางการพยาบาลฯ ในผู้ป่วยบาดเจ็บหลายระบบ',
+    'โรคระบบทางเดินอาหาร',
+    'โรคระบบไตและทางเดินปัสสาวะ',
+    'Post organ transplantation',
+    'Post open-heart surgery',
+    'การจัดการทางการพยาบาลฯ ผู้ป่วยที่ได้รับการผ่าตัดโรคระบบหัวใจและหลอดเลือด',
+    'ผู้ป่วยแผลไหม้ การจัดการทางการพยาบาลฯ ในระยะวิกฤต',
+    'AAA and Vascular surgery',
+    'Head & Spine injury',
+    'พยาธิสรีรวิทยาฯ Post pneumonectomy',
+    'การจัดการทางการพยาบาลฯ ผู้ป่วยผ่าตัดโรคระบบประสาทสมองและไขสันหลัง',
+  ]},
+  {id:'105',name:'การพยาบาลผู้ป่วยวิกฤตทางอายุรศาสตร์',unit:'3(3-0-6)',topics:[
+    'แนวคิดการดูแลผู้ป่วยวิกฤตอายุรกรรม',
+    'Management in patients with poisoning',
+    'Asthma attack',
+    'COPD with acute exacerbation',
+    'Severe pulmonary embolism',
+    'Acute stroke',
+    'Acute heart failure',
+    'Acute coronary syndrome',
+    'การพยาบาลผู้ป่วย Acute coronary syndrome',
+    'Acute respiratory distress syndrome (ARDS)',
+    'Life threatening cardiac arrhythmia and management',
+    'Bleeding disorder, Thrombocytopenia, AML, CML',
+    'การพยาบาลผู้ป่วยโรคหลอดเลือดสมอง',
+    'Acute respiratory failure',
+    'Hyperglycemia, hypoglycemia, DKA, adrenal insufficiency',
+    'Autoimmune disease, bone marrow rejection',
+    'การพยาบาลผู้ป่วยที่มีปัญหาสุขภาพซับซ้อนในระบบทางเดินหายใจ',
+    'Acute Kidney Injury (AKI)',
+    'Upper and Lower GI bleeding',
+    'Seminar: บูรณาการผู้ป่วยวิกฤตอายุรกรรมที่มีความซับซ้อน (Respiratory failure)',
+    'Seminar: บูรณาการฯ (Acute heart failure)',
+    'Seminar: บูรณาการฯ (Acute stroke)',
+    'Seminar: บูรณาการฯ (AKI)',
+    'Seminar: บูรณาการฯ (GI bleeding)',
+  ]},
+  {id:'108',name:'การจัดการข้อมูลผลลัพธ์ทางการพยาบาลในผู้ป่วยวิกฤต',unit:'1(0-2-1)',topics:[
+    'กำหนดผลลัพธ์และวางแผนรวบรวมข้อมูล',
+    'กำหนดเครื่องมือประเมินผลลัพธ์',
+    'ติดตามการรวบรวมข้อมูลผลลัพธ์ (สัปดาห์ 2)',
+    'ติดตามการรวบรวมข้อมูลผลลัพธ์ (สัปดาห์ 3)',
+    'ติดตามการรวบรวมข้อมูลผลลัพธ์ (สัปดาห์ 4)',
+    'ติดตามการวิเคราะห์ข้อมูลผลลัพธ์ (สัปดาห์ 6)',
+    'ติดตามการรวบรวมข้อมูลผลลัพธ์ (สัปดาห์ 6)',
+    'ติดตามการรวบรวมข้อมูลผลลัพธ์ (สัปดาห์ 7)',
+    'วิเคราะห์ข้อมูลสถิติด้วยโปรแกรม SPSS — กลุ่ม 1',
+    'วิเคราะห์ข้อมูลสถิติด้วยโปรแกรม SPSS — กลุ่ม 2',
+    'ติดตามการวิเคราะห์ข้อมูลและการนำเสนอ (สัปดาห์ 7)',
+    'เตรียมนำเสนอ CCN108',
+    'นำเสนอ CCN108',
+  ]},
+];
+
+const EXAMS=[
+  {code:'102',name:'สอบวิชา CCN102',date:'ศุกร์ที่ 10 กรกฎาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:''},
+  {code:'103',name:'สอบวิชา CCN103 ครั้งที่ 1',date:'อังคารที่ 14 กรกฎาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'1/3'},
+  {code:'103',name:'สอบวิชา CCN103 ครั้งที่ 2',date:'พฤหัสบดีที่ 16 กรกฎาคม 2569',time:'09.00–11.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'2/3'},
+  {code:'103',name:'สอบวิชา CCN103 ครั้งที่ 3',date:'พฤหัสบดีที่ 23 กรกฎาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'3/3'},
+  {code:'104',name:'สอบวิชา CCN104 ครั้งที่ 1',date:'ศุกร์ที่ 24 กรกฎาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'1/2'},
+  {code:'104',name:'สอบวิชา CCN104 ครั้งที่ 2',date:'พฤหัสบดีที่ 6 สิงหาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'2/2'},
+  {code:'105',name:'สอบวิชา CCN105 ครั้งที่ 1',date:'ศุกร์ที่ 7 สิงหาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'1/3'},
+  {code:'105',name:'สอบวิชา CCN105 ครั้งที่ 2',date:'จันทร์ที่ 10 สิงหาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'2/3'},
+  {code:'105',name:'สอบวิชา CCN105 ครั้งที่ 3',date:'พฤหัสบดีที่ 13 สิงหาคม 2569',time:'08.00–10.00 น.',room:'ห้องประชุม ชั้น 5 อาคาร 4',round:'3/3'},
+];
+
+// State
+let topicState={};
+let examState={};
+let subjFilter='all';
+let doneFilter=false;
+
+const BADGE={101:'b101',102:'b102',103:'b103',104:'b104',105:'b105',108:'b108'};
+
+function key(subj,i){return `t_${subj}_${i}`;}
+function ekey(i){return `e_${i}`;}
+
+function load(){
+  try{
+    const ts=localStorage.getItem('ccn24_topics');
+    if(ts) topicState=JSON.parse(ts);
+    const es=localStorage.getItem('ccn24_exams');
+    if(es) examState=JSON.parse(es);
+  }catch(e){}
+}
+function save(){
+  try{
+    localStorage.setItem('ccn24_topics',JSON.stringify(topicState));
+    localStorage.setItem('ccn24_exams',JSON.stringify(examState));
+  }catch(e){}
+}
+
+function totalTopics(){return SUBJECTS.reduce((a,s)=>a+s.topics.length,0);}
+function checkedTopics(){return Object.values(topicState).filter(Boolean).length;}
+
+function updateProgress(){
+  const total=totalTopics();
+  const done=checkedTopics();
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=done+'/'+total;
+}
+
+function toggleTopic(subj,i){
+  const k=key(subj,i);
+  topicState[k]=!topicState[k];
+  save();
+  renderTopics();
+  updateProgress();
+}
+function toggleExam(i){
+  const k=ekey(i);
+  examState[k]=!examState[k];
+  save();
+  renderExams();
+}
+
+function filterSubj(v,btn){
+  subjFilter=v;
+  document.querySelectorAll('.controls .filter-btn').forEach(b=>b.classList.remove('active'));
+  // reset done filter when changing subj
+  doneFilter=false;
+  document.getElementById('btnUndone').classList.remove('active');
+  if(btn) btn.classList.add('active');
+  renderTopics();
+}
+function filterDone(v,btn){
+  doneFilter=!doneFilter;
+  btn.classList.toggle('active',doneFilter);
+  renderTopics();
+}
+
+function resetTopics(){
+  if(!confirm('รีเซ็ตทุกหัวข้อที่ติ๊กไว้?')) return;
+  topicState={};save();renderTopics();updateProgress();
+}
+function resetExams(){
+  if(!confirm('รีเซ็ตตารางสอบทั้งหมด?')) return;
+  examState={};save();renderExams();
+}
+
+function renderTopics(){
+  const el=document.getElementById('topicsContent');
+  let html='';
+  let any=false;
+  SUBJECTS.forEach(subj=>{
+    if(subjFilter!=='all'&&subjFilter!==subj.id) return;
+    const topics=doneFilter
+      ? subj.topics.filter((_,i)=>!topicState[key(subj.id,i)])
+      : subj.topics;
+    if(doneFilter&&topics.length===0) return;
+    any=true;
+    const done=subj.topics.filter((_,i)=>topicState[key(subj.id,i)]).length;
+    const total=subj.topics.length;
+    const allDone=done===total;
+    html+=`<div class="subject-block open" id="sb_${subj.id}">
+      <div class="subject-header" onclick="toggleBlock('sb_${subj.id}')">
+        <span class="subj-badge ${BADGE[subj.id]}">CCN${subj.id}</span>
+        <span class="subj-title">${subj.name}</span>
+        <span class="subj-count">${done}/${total}</span>
+        <span class="subj-chevron">▾</span>
+      </div>
+      <div class="topics-list">`;
+    subj.topics.forEach((tp,i)=>{
+      if(doneFilter&&topicState[key(subj.id,i)]) return;
+      const checked=!!topicState[key(subj.id,i)];
+      html+=`<div class="topic-item${checked?' checked':''}" onclick="toggleTopic('${subj.id}',${i})">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="topic-text">${tp}</div>
+      </div>`;
+    });
+    html+='</div></div>';
+  });
+  if(!any) html='<div class="empty">ไม่มีหัวข้อที่ตรงกับตัวกรอง</div>';
+  el.innerHTML=html;
+}
+
+function renderExams(){
+  const el=document.getElementById('examsContent');
+  let html='<div class="exam-block"><div class="exam-header-row">📝 ตารางสอบทั้งหมด 9 ครั้ง</div>';
+  EXAMS.forEach((ex,i)=>{
+    const checked=!!examState[ekey(i)];
+    html+=`<div class="exam-item${checked?' checked':''}" onclick="toggleExam(${i})">
+      <div class="exam-check"></div>
+      <div class="exam-info">
+        <div class="exam-name">${ex.name}${ex.round?'<span class="exam-tag">'+ex.round+'</span>':''}</div>
+        <div class="exam-date">${ex.date} &nbsp;·&nbsp; ${ex.time} &nbsp;·&nbsp; ${ex.room}</div>
+      </div>
+      <span class="exam-badge ${BADGE[ex.code]}">CCN${ex.code}</span>
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function toggleBlock(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tabTopics').style.display=tab==='topics'?'':'none';
+  document.getElementById('tabExams').style.display=tab==='exams'?'':'none';
+}
+
+load();
+renderTopics();
+renderExams();
+updateProgress();
+</script>
+</body>
+</html>
