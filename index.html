@@ -97,14 +97,29 @@ body{font-family:Sarabun,sans-serif;background:#f7f7f5;color:#1a1a1a;font-size:1
     <p>การพยาบาลผู้ป่วยวิกฤต รุ่นที่ 24 · คณะพยาบาลศาสตร์ มช.</p>
   </div>
   <div class="progress-wrap">
+    <span id="saveStatus" style="font-size:11px;transition:color .3s;min-width:80px;text-align:right"></span>
     <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <div class="progress-label" id="progressLabel">0%</div>
+  </div>
+</div>
+
+<!-- Debug panel -->
+<div id="diagPanel" style="display:none;margin:0 20px 0;background:#fff;border:1px solid #e8e8e4;border-radius:12px;overflow:hidden">
+  <div style="padding:12px 16px;border-bottom:1px solid #f0f0eb;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:13px;font-weight:700">🔍 ตรวจสอบ localStorage</span>
+    <button onclick="document.getElementById('diagPanel').style.display='none'" style="font-size:12px;color:#bbb;background:none;border:none;cursor:pointer">ปิด</button>
+  </div>
+  <div id="diagOut" style="padding:14px 16px;font-size:12px;color:#888">กด "ตรวจสอบ" เพื่อเริ่ม</div>
+  <div style="padding:0 16px 14px;display:flex;gap:8px">
+    <button onclick="runDiag()" style="font-size:12px;padding:6px 14px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:Sarabun,sans-serif">ตรวจสอบ</button>
+    <button onclick="forceReload()" style="font-size:12px;padding:6px 14px;background:#fff;color:#555;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-family:Sarabun,sans-serif">โหลด state ใหม่</button>
   </div>
 </div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('topics',this)">หัวข้อที่เรียน</button>
   <button class="tab" onclick="switchTab('exams',this)">ตารางสอบ</button>
+  <button class="tab" onclick="toggleDiag()" style="margin-left:auto;color:#bbb;font-size:12px">🔍 Debug</button>
 </div>
 
 <div id="tabTopics">
@@ -291,7 +306,96 @@ function save(){
   try{
     localStorage.setItem('ccn24_topics',JSON.stringify(topicState));
     localStorage.setItem('ccn24_exams',JSON.stringify(examState));
+    showSaveStatus(true);
+  }catch(e){
+    showSaveStatus(false,e);
+  }
+}
+
+function showSaveStatus(ok, err){
+  const el=document.getElementById('saveStatus');
+  if(!el) return;
+  if(ok){
+    el.textContent='✓ บันทึกแล้ว';
+    el.style.color='#16a34a';
+  } else {
+    el.textContent='✗ บันทึกไม่ได้: '+(err||'');
+    el.style.color='#dc2626';
+  }
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.textContent='',2000);
+}
+
+async function runDiag(){
+  const out=document.getElementById('diagOut');
+  out.innerHTML='<div style="color:#888">กำลังตรวจสอบ...</div>';
+  const lines=[];
+
+  // 1. localStorage available?
+  let lsOk=false;
+  try{
+    localStorage.setItem('__diag__','1');
+    lsOk=localStorage.getItem('__diag__')==='1';
+    localStorage.removeItem('__diag__');
+  }catch(e){lsOk=false;}
+  lines.push(row(lsOk,'localStorage ใช้งานได้',lsOk?'':'เบราว์เซอร์บล็อก localStorage (อาจเป็น Safari/Private mode)'));
+
+  // 2. Existing keys?
+  const tVal=localStorage.getItem('ccn24_topics');
+  const eVal=localStorage.getItem('ccn24_exams');
+  const tExist=tVal!==null;
+  const eExist=eVal!==null;
+  lines.push(row(tExist,'พบ key ccn24_topics',tExist?'มีข้อมูล: '+Object.keys(JSON.parse(tVal)||{}).length+' รายการ':'ไม่พบ key นี้ใน localStorage'));
+  lines.push(row(eExist,'พบ key ccn24_exams',eExist?'มีข้อมูล: '+Object.keys(JSON.parse(eVal)||{}).length+' รายการ':'ไม่พบ key นี้ใน localStorage'));
+
+  // 3. Write-read test
+  let wrOk=false;
+  try{
+    const t=Date.now().toString();
+    localStorage.setItem('__wr__',t);
+    wrOk=localStorage.getItem('__wr__')===t;
+    localStorage.removeItem('__wr__');
   }catch(e){}
+  lines.push(row(wrOk,'เขียน-อ่านข้อมูลได้',wrOk?'':'ไม่สามารถเขียนได้'));
+
+  // 4. Storage quota
+  let quota='ไม่ทราบ';
+  try{
+    if(navigator.storage&&navigator.storage.estimate){
+      const est=await navigator.storage.estimate();
+      const used=Math.round(est.usage/1024);
+      const total=Math.round(est.quota/1024);
+      quota=`${used} KB / ${total} KB`;
+    }
+  }catch(e){}
+  lines.push(rowInfo('Storage quota',quota));
+
+  // 5. Origin
+  lines.push(rowInfo('Origin (URL)',location.origin));
+
+  // 6. Browser
+  lines.push(rowInfo('Browser',navigator.userAgent.split(' ').slice(-2).join(' ')));
+
+  // 7. Suggest
+  let suggest='';
+  if(!lsOk) suggest='⚠️ localStorage ถูกบล็อก — ลองใช้ Chrome และปิด Private mode';
+  else if(!tExist&&!eExist) suggest='⚠️ ยังไม่มีข้อมูลบันทึก — ลองติ๊ก checkbox แล้วเปิดใหม่';
+  else suggest='✅ localStorage ดูปกติ — ถ้ายังหาย ลองล้าง cache browser แล้วใช้ใหม่';
+
+  out.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">${lines.join('')}</div>
+    <div style="margin-top:12px;padding:10px 12px;background:#f0f9ff;border-radius:8px;font-size:12px;color:#0369a1">${suggest}</div>`;
+}
+
+function row(ok,label,detail){
+  return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:12px">
+    <span style="font-size:14px;flex-shrink:0">${ok?'✅':'❌'}</span>
+    <div><div style="font-weight:600;color:${ok?'#166534':'#991b1b'}">${label}</div>
+    ${detail?`<div style="color:#666;margin-top:1px">${detail}</div>`:''}</div></div>`;
+}
+function rowInfo(label,val){
+  return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:12px">
+    <span style="font-size:14px;flex-shrink:0">ℹ️</span>
+    <div><span style="font-weight:600;color:#374151">${label}:</span> <span style="color:#6b7280">${val}</span></div></div>`;
 }
 
 function totalTopics(){return SUBJECTS.reduce((a,s)=>a+s.topics.length,0);}
@@ -422,6 +526,18 @@ function switchTab(tab,btn){
   btn.classList.add('active');
   document.getElementById('tabTopics').style.display=tab==='topics'?'':'none';
   document.getElementById('tabExams').style.display=tab==='exams'?'':'none';
+}
+
+function toggleDiag(){
+  const p=document.getElementById('diagPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block') runDiag();
+}
+function forceReload(){
+  topicState={};examState={};
+  load();
+  renderTopics();renderExams();updateProgress();
+  document.getElementById('diagOut').innerHTML='<div style="color:#16a34a;font-size:12px">✅ โหลด state ใหม่จาก localStorage แล้ว</div>';
 }
 
 load();
