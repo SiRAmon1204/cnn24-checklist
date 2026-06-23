@@ -450,59 +450,88 @@ function resetExams(){
 
 function renderTopics(){
   const el=document.getElementById('topicsContent');
-  let html='';
+  el.innerHTML='';
   let any=false;
   SUBJECTS.forEach(subj=>{
     if(subjFilter!=='all'&&subjFilter!==subj.id) return;
-    const topics=doneFilter
-      ? subj.topics.filter((_,i)=>!topicState[key(subj.id,i)])
-      : subj.topics;
-    if(doneFilter&&topics.length===0) return;
+    const visibleItems=doneFilter
+      ? subj.topics.map((tp,i)=>({tp,i})).filter(({i})=>!topicState[key(subj.id,i)])
+      : subj.topics.map((tp,i)=>({tp,i}));
+    if(doneFilter&&visibleItems.length===0) return;
     any=true;
     const done=subj.topics.filter((_,i)=>topicState[key(subj.id,i)]).length;
     const total=subj.topics.length;
-    html+=`<div class="subject-block open" id="sb_${subj.id}">
-      <div class="subject-header" onclick="toggleBlock('sb_${subj.id}')">
-        <span class="subj-badge ${BADGE[subj.id]}">CCN${subj.id}</span>
-        <span class="subj-title">${subj.name}</span>
-        <span class="subj-count">${done}/${total}</span>
-        <span class="subj-chevron">▾</span>
-      </div>
-      <div class="topics-list">`;
-    subj.topics.forEach((tp,i)=>{
-      if(doneFilter&&topicState[key(subj.id,i)]) return;
+
+    const block=document.createElement('div');
+    block.className='subject-block open';
+    block.id='sb_'+subj.id;
+
+    const head=document.createElement('div');
+    head.className='subject-header';
+    head.innerHTML=`<span class="subj-badge ${BADGE[subj.id]}">CCN${subj.id}</span>
+      <span class="subj-title">${subj.name}</span>
+      <span class="subj-count">${done}/${total}</span>
+      <span class="subj-chevron">▾</span>`;
+    head.addEventListener('click',()=>toggleBlock('sb_'+subj.id));
+
+    const list=document.createElement('div');
+    list.className='topics-list';
+
+    visibleItems.forEach(({tp,i})=>{
       const checked=!!topicState[key(subj.id,i)];
       const name=typeof tp==='object'?tp.t:tp;
       const date=typeof tp==='object'?tp.d:'';
       const time=typeof tp==='object'?tp.time:'';
       const tc=typeof tp==='object'?tp.tc:'';
-      html+=`<div class="topic-item${checked?' checked':''}" onclick="toggleTopic('${subj.id}',${i})">
-        <div class="checkbox"><span class="checkmark">✓</span></div>
-        <div style="display:flex;flex-direction:column;gap:3px;flex:1">
-          <div class="topic-text">${name}</div>
-          ${date?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="background:#f0f0eb;color:#888;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap">${date}</span>
-            ${time?`<span style="font-size:11px;color:#bbb">${time}</span>`:''}
-          </div>`:''}
-          ${tc?`<div style="font-size:11px;color:#bbb">${tc}</div>`:''}
-        </div>
-      </div>`;
+
+      const item=document.createElement('div');
+      item.className='topic-item'+(checked?' checked':'');
+
+      const cb=document.createElement('div');
+      cb.className='checkbox';
+      cb.innerHTML='<span class="checkmark">✓</span>';
+
+      const info=document.createElement('div');
+      info.style.cssText='display:flex;flex-direction:column;gap:3px;flex:1';
+      info.innerHTML=`<div class="topic-text">${name}</div>
+        ${date?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="background:#f0f0eb;color:#888;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap">${date}</span>
+          ${time?`<span style="font-size:11px;color:#bbb">${time}</span>`:''}
+        </div>`:''}
+        ${tc?`<div style="font-size:11px;color:#bbb">${tc}</div>`:''}`;
+
+      item.appendChild(cb);
+      item.appendChild(info);
+      item.addEventListener('click',()=>toggleTopic(subj.id,i));
+      list.appendChild(item);
     });
-    html+='</div></div>';
+
+    block.appendChild(head);
+    block.appendChild(list);
+    el.appendChild(block);
   });
-  if(!any) html='<div class="empty">ไม่มีหัวข้อที่ตรงกับตัวกรอง</div>';
-  el.innerHTML=html;
+  if(!any) el.innerHTML='<div class="empty">ไม่มีหัวข้อที่ตรงกับตัวกรอง</div>';
 }
 
 function renderExams(){
   const el=document.getElementById('examsContent');
+  el.innerHTML='';
   const done=checkedExams();
-  let html=`<div class="exam-block">
-    <div class="exam-header-row">📝 ตารางสอบทั้งหมด 9 ครั้ง &nbsp;<span style="font-size:11px;font-weight:400;color:#bbb">${done}/9 เสร็จแล้ว</span></div>`;
+
+  const block=document.createElement('div');
+  block.className='exam-block';
+
+  const head=document.createElement('div');
+  head.className='exam-header-row';
+  head.innerHTML=`📝 ตารางสอบทั้งหมด 9 ครั้ง &nbsp;<span style="font-size:11px;font-weight:400;color:#bbb">${done}/9 เสร็จแล้ว</span>`;
+  block.appendChild(head);
+
   EXAMS.forEach((ex,i)=>{
     const checked=!!examState[ekey(i)];
-    html+=`<div class="exam-item${checked?' checked':''}" onclick="toggleExam(${i})">
-      <div class="exam-check"></div>
+    const item=document.createElement('div');
+    item.className='exam-item'+(checked?' checked':'');
+
+    item.innerHTML=`<div class="exam-check"></div>
       <div class="exam-info">
         <div class="exam-name">${ex.name}${ex.round?'<span class="exam-tag">'+ex.round+'</span>':''}</div>
         <div class="exam-date">
@@ -510,11 +539,13 @@ function renderExams(){
           ${ex.time} &nbsp;·&nbsp; ${ex.room}
         </div>
       </div>
-      <span class="exam-badge ${BADGE[ex.code]}">CCN${ex.code}</span>
-    </div>`;
+      <span class="exam-badge ${BADGE[ex.code]}">CCN${ex.code}</span>`;
+
+    item.addEventListener('click',()=>toggleExam(i));
+    block.appendChild(item);
   });
-  html+='</div>';
-  el.innerHTML=html;
+
+  el.appendChild(block);
 }
 
 function toggleBlock(id){
